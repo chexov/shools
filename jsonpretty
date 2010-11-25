@@ -1,0 +1,3 @@
+#!/bin/sh
+set -x
+cat | python -m simplejson.tool

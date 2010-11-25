@@ -1,0 +1,1 @@
+git rev-parse HEAD | awk '{print substr($1,0,8)}'
