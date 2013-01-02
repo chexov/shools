@@ -34,6 +34,7 @@ while true; do
     ssh -R localhost:${port}:localhost:${localport} \
         -N -T -o ExitOnForwardFailure=yes \
         -o StrictHostKeyChecking=no \
+        -o BatchMode=yes \
         -v ${host}; sleep 3; date;
 done
 
