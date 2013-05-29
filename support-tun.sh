@@ -1,10 +1,10 @@
 #!/bin/sh
 set -ue
 
-[ $# -ge 2 ] || { echo "Usage: <host> <port> [<localport>]"; exit 1; }
+[ $# -ge 2 ] || { echo "Usage: <host> <port> [<localhost:localport>]"; exit 1; }
 host=$1
 port=$2
-localport=${3:-22}
+localport=${3:-localhost:22}
 name=support-$host-$port-$localport
 
 # if file does not exist returns 1
@@ -31,10 +31,9 @@ tryLock() {
 tryLock /tmp/${name}.pid || exit 0
 
 while true; do
-    ssh -R localhost:${port}:localhost:${localport} \
-        -N -T -o ExitOnForwardFailure=yes \
+    ssh -R ${port}:${localport} \
+        -2 -N -T -o ExitOnForwardFailure=yes \
         -o StrictHostKeyChecking=no \
         -o BatchMode=yes \
         -v ${host}; sleep 3; date;
 done
-
