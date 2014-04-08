@@ -1,39 +1,22 @@
 #!/bin/sh
 set -ue
 
-[ $# -ge 2 ] || { echo "Usage: <host> <port> [<localhost:localport>]"; exit 1; }
-host=$1
-port=$2
-localport=${3:-localhost:22}
-name=support-$host-$port-$localport
+[ $# -eq 4 ] || { echo "Usage: <lockfile.pid> <user@remote.host> <local port (service to tunnel)> <remote port>"; exit 1; }
+pid=$1
+server=$2
+localport=$3
+serverport=$4
 
-# if file does not exist returns 1
-# if pid specified in file is running returns 0
-# if pid is not running returns 2
-isRunningFromPidFile() {
-    local pidfile="$1"
-    [ ! -f "$pidfile" ] && return 1
-    local pid=`cat "$pidfile" | tr -C -d '[0-9]'`
-    [ -z "$pid" ] && return 1
-    local psout=`ps -p $pid | wc -l`
-    [ $psout -le 1 ] && return 2
-    return 0
-}
+# check if lockfile has running process in it. exit if already running
+test -s $pid && kill -0 `<$pid` 2>/dev/null && exit 0
 
-tryLock() {
-    local pidfile="$1"
-    isRunningFromPidFile $pidfile && return 1
-    echo $$ >$pidfile
-    return 0
-}
+# lock with new PID
+echo $$ > "$pid"
 
+# open SSH port tunneling
+ssh -R ${serverport}:localhost:${localport} \
+    -2 -N -T -o ExitOnForwardFailure=yes \
+    -o StrictHostKeyChecking=no \
+    -o BatchMode=yes \
+    ${server}
 
-tryLock /tmp/${name}.pid || exit 0
-
-while true; do
-    ssh -R ${port}:${localport} \
-        -2 -N -T -o ExitOnForwardFailure=yes \
-        -o StrictHostKeyChecking=no \
-        -o BatchMode=yes \
-        -v ${host}; sleep 3; date;
-done
